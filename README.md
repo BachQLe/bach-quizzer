@@ -31,7 +31,7 @@ One-time setup for step 2: create an npm account, make an automation (or granula
 ## Layout
 
 - `quizzer/`: the page source (full-size photos)
-- `skill/`: `SKILL.md` and `references/` (setup, update, edits, mini)
+- `skill/`: `SKILL.md` (every kind of quiz, pilots included) and `references/` (setup, update, edits)
 - `tools/build.py`: builds the zip and the npm package into `dist/`
 - `.github/workflows/release.yml`: builds and publishes on push to `stable`
 

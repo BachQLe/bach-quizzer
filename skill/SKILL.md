@@ -10,7 +10,7 @@ description: "Bach's Quizzer: 'quiz me', mini or pilot quizzes, FRQs with rubric
 Everything this skill needs is in its own folder (the base directory shown when it loaded), so nothing is downloaded from the web:
 - `page/`: the Quizzer page files (used only by setup and update)
 - `version.json`: this release's version and notes
-- `references/setup.md`, `references/update.md`, `references/edits.md`, `references/mini.md`
+- `references/setup.md`, `references/update.md`, `references/edits.md`
 
 ## 1. Find the Quizzer
 
@@ -22,8 +22,7 @@ Open a reference file only when the request needs it, and read it once:
 - They have no Quizzer yet, or ask to set one up or install it: `references/setup.md`.
 - "Update my Quizzer" (usually pasted from the page's update popup): `references/update.md`.
 - Change, restyle, fix or add a feature to the page itself: `references/edits.md`.
-- Quick pilot or mini quiz ("pilot me", "mini quiz", "check me on this"): `references/mini.md`.
-- Everything else (quizzes, FRQs, grading, reviews, missed pile, stats): the rest of this file. Don't open any reference.
+- Everything else (pilot or mini quizzes, quizzes, FRQs, grading, reviews, missed pile, stats): the rest of this file. Don't open any reference.
 
 If the person attached `bachs-quizzer.zip` in the chat instead of installing it as a skill, unzip it into the working folder and use `bachs-quizzer/` from there as this skill's folder.
 
@@ -35,6 +34,16 @@ The page is already built and published. Your only job is to write questions int
 - Link: only give it if he asks.
 
 Never rebuild, read, restyle or republish the page. Never use the built-in quiz widget. Never print questions or answers in chat.
+
+## Which mode
+
+- "pilot me", "mini quiz", "check me on this" (he just learned a chunk): **Pilot**, 5 multiple-choice questions. See "Pilot / mini quiz".
+- "quiz me", practice questions, no number given: a normal quiz, 10 questions. See "Questions".
+- FRQs, free response, essay or long-answer practice: see "Free response (FRQ) and rubrics".
+- "quiz me on what I missed", last-10 cold test, spaced quiz, analyze my holes, stats: see "Missed pile and blind spots".
+- "grade my quiz", "review my results": see "Review results".
+
+His study method is the question spam method: a 5-question pilot right after learning a chunk, then a 10-question quiz, re-quiz the misses, a big quiz or test, then spaced repetition. Suggest the next step in that ladder only if he asks what to do next.
 
 ## Budget: two tool calls per quiz
 
@@ -66,7 +75,7 @@ One op: `set` on `quizzes/<id>`, no `ifVersion` (it is a new document).
 ```
 
 - Write only these fields. No `id` or `topic` (the page infers them), and no `type` except `"graph"` on a graph question or `"frq"` on a free-response question. Add `availableAt` only for a spaced quiz (see "Missed pile and blind spots"), and `kind` only as below.
-- `kind` (hidden tag, never mention it to Bach): `"test"` for a practice test, mock exam or exam simulation (spans the exam scope, usually 20+ questions); `"compound"` for a cumulative quiz that mixes several topics or units (a last-10 cold test, a unit review, a mixed missed-pile quiz across topics). Leave it out for an ordinary single-topic quiz. The Stats tab's predicted test score weights tests about 4x and compound quizzes about 2.5x, on top of a 12-hour recency half-life, so tag honestly.
+- `kind` (hidden tag, never mention it to Bach): `"test"` for a practice test, mock exam or exam simulation (spans the exam scope, usually 20+ questions); `"compound"` for a cumulative quiz that mixes several topics or units (a last-10 cold test, a unit review, a mixed missed-pile quiz across topics). Leave it out for an ordinary single-topic quiz and for a pilot. The Stats tab's predicted test score weights tests about 4x and compound quizzes about 2.5x, on top of a 12-hour recency half-life, so tag honestly.
 - `createdAt` is required: the current UTC time (if you only know the date, estimate the time; never run a tool for it). It must be later than any quiz you wrote earlier in this chat, so the new quiz sorts first and opens.
 - `title` is specific ("Slutsky and consumer choice", not "Quiz 3").
 - `subject` is the folder. Reuse these exactly when they fit: `ECON 3010`, `PSYC 2005`, `SOC 2870`, `ANTH 2444`, `Linear Algebra`, `French`. Otherwise use the course code he uses, or 1-3 words in Title Case. The project or course of the chat decides it.
@@ -75,6 +84,18 @@ One op: `set` on `quizzes/<id>`, no `ifVersion` (it is a new document).
 - Math (subscripts, partial derivatives, integrals, fractions, sums): write LaTeX as `$...$` inline or `$$...$$` for display, in prompts, choices and explanations, e.g. `$\\frac{\\partial U}{\\partial x_1}$` or `$\\int_0^1 f(x)\\,dx$`. Backslashes are doubled because this is JSON. Plain dollar amounts like $4 are fine. If the math starts with a digit, use `\\(2x+3\\)` instead. Never put `$` inside backticks.
 - Table, only when a question needs data laid out (a demand schedule, payoff matrix, results): add `"table": {"headers": ["Price", "Qty"], "rows": [["$4", "100"], ["$5", "80"]]}` to that question. Max 8 columns and 12 rows. The question itself stays in `prompt`. Don't use tables for decoration.
 - Graph question, when the topic is something he should sketch (functions, transformations, supply and demand, indifference curves, budget lines, distributions): `{"type": "graph", "prompt": "Sketch $y=(x-2)^2-1$ and mark the vertex.", "graph": {...}, "answer": "words describing the graph", "explanation": "..."}`. The page shows graph paper with Pencil, Line (drag the faint middle dot to bend it; there is no separate curve tool), Arrow (a line with a head; click the tool again for heads at both ends), Dot, Open dot, Eraser, Edit, Snap, Undo and Clear, plus a Letter tool when the question sets point letters. At the end it overlays the real graph on his drawing (Overlay, Mine, Answer views) and he marks it Good or Bad himself, so it is self-graded like a written answer. `answer` is a short text description of the correct graph (it is what shows in results and the missed pile). `graph` holds the axes and the answer key: `{"xMin": -2, "xMax": 6, "yMin": -3, "yMax": 8, "xStep": 1, "yStep": 1, "xLabel": "x", "yLabel": "y", "given": {...}, "answer": {"curves": [{"fn": "(x-2)^2-1"}], "dots": [{"x": 2, "y": -1}], "vlines": [], "hlines": []}}`. `given` (optional, same shape as `answer`) is drawn on the paper before he starts, in blue, e.g. the parent function. A curve is `{"fn": "<formula in x>"}` or `{"points": [[x, y], ...]}` for polylines and line segments, plus optional `"domain": [a, b]` (piecewise pieces) and `"dash": true`. Formulas support + - * / ^, parentheses, `2x` style multiplication, pi, e and sin cos tan asin acos atan sqrt cbrt abs exp ln log floor ceil sign, e.g. `"1/(x-1)+2"`, `"2sin(x)"`, `"abs(x-1)"`, `"e^x"`. A dot is `{"x": 2, "y": 3, "open": true}` (open or closed), and may carry `"label": "A"` (up to 4 characters) to draw a point letter beside it. `vlines` and `hlines` are numbers, drawn dashed, for asymptotes. Add `"arrows": "end"`, `"start"` or `"both"` to a curve to put arrowheads on its ends (`both` for end behavior; `end` for a ray or vector given as two `points`). Letters are set by the question: put `"letters": ["A", "B", "C"]` in `graph` and the Letter tool offers only those letters, so he places each one himself; without `letters`, the labels on the answer `dots` become the choices. Give the answer dots matching `label`s, and name the points in `answer` and `explanation` ("A is the vertex"). Use letters only when the question asks him to mark named points; with none the tool is hidden. For supply and demand or other economics curves, use `points` or linear `fn` with labelled axes (`xLabel` "Quantity", `yLabel` "Price"). Keep ranges small and gridlines at whole numbers so he can place lattice points; put the points he must mark in `dots`. Pick a range where the answer is fully visible, up to about 10 gridlines per axis. Graph questions need no `choices`. Use 1-3 per quiz alongside the usual questions unless he asks for a graphing quiz.
+
+## Pilot / mini quiz
+
+His first check right after learning a chunk ("pilot me", "mini quiz", "check me on this"). Same page, same database, same two-call budget as any quiz.
+
+- Exactly 5 multiple-choice questions, no short answer, no FRQ, no `kind`. Use a different count only if he gives one.
+- Cover only what he just learned: the section, slides, reading or notes in the chat. If it isn't clear which chunk, use the most recent material in the chat; ask one short question only if there is none.
+- Easy to medium, one question per key idea in that chunk, so a miss points at a specific idea. Keep the apply-or-catch-a-misconception standard from "Questions", with plausible distractors and spread-out answer letters.
+- `title`: `Pilot · <section>` (e.g. `Pilot · Slutsky equation`). `subject`: the folder, as above.
+- `<id>`: `<subject>-pilot-<yyyymmdd><letter>`, lowercase with hyphens, e.g. `econ3010-pilot-20261126a`. If the write is refused because the id exists, change the last letter and retry.
+- Same limits as other quizzes: prompt under 40 words, each choice under 12 words, explanation 1-2 sentences under 35 words.
+- Reply in one line: "5 questions on X are in your Quizzer under ECON 3010." Nothing more.
 
 ## Free response (FRQ) and rubrics
 
@@ -107,7 +128,7 @@ The class folder is the quiz `subject`. Its shared grading tendencies live as ma
 
 ## Questions
 
-- 10 unless he gives a number. Multiple choice does most of the work: quizzes of 10 or fewer are all multiple choice. Around 15 questions, add 1-2 short short answers (1-3 words: a term, a number, a formula, a translation) with `accept` variants so they auto-grade. Use more short answer only when he must produce the answer (formulas, translations).
+- 10 unless he gives a number (a pilot is 5). Multiple choice does most of the work: quizzes of 10 or fewer are all multiple choice. Around 15 questions, add 1-2 short answers (1-3 words: a term, a number, a formula, a translation) with `accept` variants so they auto-grade. Use more short answer only when he must produce the answer (formulas, translations).
 - Apply, compute, or catch a misconception, not trivia. Easy to hard.
 - Plausible distractors (common errors, neighboring concepts). No "all of the above". Spread the correct letter.
 - Each question stands alone.
@@ -129,7 +150,7 @@ Then reply in one line: "10 questions on X are in your Quizzer under ECON 3010."
   ```
   `n` is the item's `n`. FRQ: `met` has one boolean per rubric bullet, in order (the page ticks them; 70% of the points counts as right). Short answer: `verdict` is `got` or `missed` (`partly` counts as missed). `note` is one or two sentences on what earned or lost credit, as criteria, quoting him under 15 words. Never write a sample or model response. Be honest and don't round up. `gradedAt` is the current UTC time and must change on every regrade.
   4. The page applies it live: ticks the rubric, sets I got it / Missed it, shows the note under each answer, and re-syncs his results and missed pile. Reply in one or two lines (new score, the main gap). No per-bullet list in chat unless he asks.
-- Cover misses first, then flagged-but-right. Teach the idea behind each in a sentence or two and name any pattern across misses. Offer one follow-up quiz on the weak spots.
+- Cover misses first, then flagged-but-right. Teach the idea behind each in a sentence or two and name any pattern across misses. Offer one follow-up quiz on the weak spots (after a pilot, the natural follow-up is the 10-question quiz on the same material).
 
 ## Missed pile and blind spots
 
@@ -138,7 +159,7 @@ The page keeps a ready-made summary per subject, so don't dig through individual
 Fields: `missed[]` (newest first, up to 40: `prompt`, `type`, `choices`, `answer`, `explanation`, `table`, `misses`, `tries`, `lastConfidence`, `blindSpot`), `unresolved` (count), `blindSpots` (count of sure-but-wrong), `confidence` (`sure`, `unsure`, `guess`, each `{n, right}`), and `recent[]` (quiz `title`, `score`, `total`, `tries`, `dueAt`).
 
 - **Missed-pile quiz** ("quiz me on what I missed"): take up to 10 from `missed`, blind spots first, then most misses. Write them verbatim (same `prompt`, `choices`, `answer`, `table`, and for FRQs `rubric` and `points`) so a correct answer clears them from the pile; the page matches on the prompt text. Title like "ECON 3010 · missed pile". If the pile has fewer than 10, use what's there and say so in the reply.
-- **Last-10 cold test**: about half from `missed`, half fresh or rephrased questions on concepts he got right before, since those fade too.
+- **Last-10 cold test**: about half from `missed`, half fresh or rephrased questions on concepts he got right before, since those fade too. Tag `"kind": "compound"`.
 - **Analyze my holes**: lead with `blindSpot` entries (he was sure and wrong, so it's a wrong model, not a slip), then repeated misses, then shaky-but-right. Compare `sure` accuracy to `unsure` and `guess`: if they're close, his confidence isn't tracking what he knows. Name the pattern in a sentence or two; don't list every question.
 - **Stats and blind spots** ("stats", "how am I doing", "blind spots"): the Quizzer's Stats tab already computes a predicted test score (heavily weighted to recent work and to `kind` test/compound quizzes), accuracy per quiz on a time axis, per-day volume, pie breakdowns and a Blind spots list from `results/*` (3 days, 7 days or all time), so point him there instead of recomputing by hand. In chat, work from the same data (`db_list` on `results`, filter by subject and `finishedAt`) and rank questions by the same signals: missed 2+ times, a fast miss (wrong in well under his median seconds, which usually means he believed it), wrong after being right before, and still wrong on the latest attempt. Use real sure-but-wrong data from `review/<subject-key>` only when it has any. Without confidence ratings, say the ranking is a proxy and suggest turning on Conf. Group related misses into rules (e.g. "CI excludes 0 means significant") and call out asymmetries (right when X, wrong when the mirror case). Check the exam scope first so he doesn't study material that isn't on the test.
 - **Spaced quiz** ("spaced quiz", "schedule a quiz on what I missed"): built like the missed-pile quiz (one `db_get` on `review/<subject-key>`, hardest first: blind spots, then most `misses`, then lowest confidence, up to 10, written verbatim), plus `"availableAt"`: the current UTC time + 8 hours as an ISO string (e.g. `2026-11-16T02:23:00Z`; work it out from the timestamp in the chat, don't run a tool). Title "<subject> · spaced". The page keeps it locked in his To do list with a countdown and opens it when the time comes. Reply in one line with his local time (America/New_York): "10 hard questions on X are scheduled in your Quizzer for 9:23 PM." If the pile is empty, say so and don't schedule anything.

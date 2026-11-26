@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "released": "2026-11-26",
   "notes": [
-    "New Quizzers open with a short welcome quiz that tours every question type: multiple choice, math, tables, short answer, graphing and free response.",
-    "Delete the demo from its results screen when you're done. It won't come back."
+    "Pilot and mini quizzes now live inside the main skill, so one self-contained skill handles every kind of quiz.",
+    "Your Quizzer never needs GitHub to work. GitHub only delivers updates."
   ]
 }
