@@ -1,17 +1,12 @@
----
-name: "bachs-quizzer-edits"
-description: "Use when Bach asks to change, restyle, fix or add features to the Bach's Quizzer page itself (not for writing quiz questions, which is bachs-quizzer)."
----
-
 # Editing Bach's Quizzer page
 
-> Shared copy. This file is loaded from github.com/BachQLe/bach-quizzer by the bachs-quizzer loader. It was written for Bach: when someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy, at the slug the loader gave you. Bach's course list is only an example of naming; reuse the subjects the person already uses.
+> Part of the bachs-quizzer skill. It was written for Bach: when someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy, at the slug SKILL.md found. Bach's course list is only an example of naming; reuse the subjects the person already uses.
 
 The Quizzer is a published multi-file artifact.
-- Slug: the one the loader found (the person's own Quizzer).
+- Slug: the one SKILL.md found (the person's own Quizzer).
 - The design rules below are Bach's defaults. In someone else's copy, their own wishes win; keep the rest.
 - Files: `index.html` (all CSS + JS inline), `katex/katex.css`, `katex/katex.min.js`, `img/*.webp`, `img/photos.json`. Only `index.html` normally changes.
-- Writing questions into its database is the bachs-quizzer skill's job. This skill is only for changing the page.
+- Writing questions into its database is SKILL.md's job. This file is only for changing the page.
 
 ## Design rules (Bach's stated preferences)
 - Keep the retro pixel look: Silkscreen on buttons, tabs, labels, pills, question numbers, the timer and the score. Keep the pixel corner brackets on the card. Don't swap pixel UI for a plain sans font.
@@ -23,10 +18,10 @@ The Quizzer is a published multi-file artifact.
 - Results list: missed first, then Check, then correct. Correct items are quieter, with the explanation in a `<details>`.
 
 ## Don't touch
-Data and storage logic, DB paths (`quizzes/<id>`, `results/<id>`), the quiz schema, `validQuiz()`, `pushResults()`, `resultsText()`, keyboard shortcuts, calculator and timer logic. Changing these breaks bachs-quizzer or saved results.
+Data and storage logic, DB paths (`quizzes/<id>`, `results/<id>`), the quiz schema, `validQuiz()`, `pushResults()`, `resultsText()`, keyboard shortcuts, calculator and timer logic. Changing these breaks quiz writing or saved results. Also leave `BQ_VERSION` and the update-check block alone: the release steps own them, and a wrong version makes the update popup misfire.
 
 ## Workflow
-1. Pull the live files to disk in one call: `read_file` with `paths: ["index.html", "katex/katex.css", "katex/katex.min.js", "img/photos.json", "test/mock.js", "test/qa.py.txt"]` (they save unwrapped, nothing passes through context). Copy them into a working folder (`test/qa.py.txt` becomes `test/qa.py`), keep an `index.orig.html` backup, and note the version.
+1. Pull the live files to disk in one call: `read_file` with `paths: ["index.html", "katex/katex.css", "katex/katex.min.js", "img/photos.json", "test/mock.js", "test/qa.py.txt", "test/update.py.txt"]` (they save unwrapped, nothing passes through context). Copy them into a working folder (`test/qa.py.txt` becomes `test/qa.py`), keep an `index.orig.html` backup, and note the version.
 2. Make targeted edits with Edit, not full rewrites.
 3. Check syntax: extract the inline `<script>` to a file and run `node --check`.
 4. QA: `python3 -I test/qa.py index.html shots` (serves the folder on port 8766, injects `test/mock.js`: 45 quizzes over 5 subjects with math, tables, a long prompt, short answers, graph and FRQ questions, results, a folder and a class rubric). It walks hub, stats, a full quiz, reveal, rubric ticks, a Claude grades doc, dropping a question and back to the hub at desktop 1280x800, phone 390x844 and reduced motion. Pass means `errors: []`, `card_survives_clicks: true`, 3 writes after 3 rubric ticks, `grades_applied` 2 notes and 2 ticks, `drop_ok: true`. Screenshots land in `test/*.png`. Extend the mock and the walk when you add a feature (the Letter tool isn't covered yet). When Bach asks for subagents, build with one Sonnet agent and QA with a separate one using this harness.
@@ -47,7 +42,7 @@ The hub has Library and Stats toggles (`statsOn`, `statsRange` in localStorage `
 - Accuracy-per-quiz points sit on a real time axis and show a hover tooltip with the quiz name, score and time.
 
 ## Graph questions (added 2026-11-23)
-A question with `type: "graph"` shows a drawing pad instead of choices or a text box. Everything lives in one block of index.html, headed `/* graph questions: draw it, then compare with the real graph */`, just before `/* results → db */`: `gParse`/`gCompile` (safe formula parser, no eval), `gClean`/`gShapes`/`gDescribe` (schema cleaning, called from `validQuiz`), `gDraw` and friends (canvas painting), `gPadHtml`/`gMountPad` (question screen: Pencil, Line, Dot, Open dot, Eraser, Snap, Undo, Clear, Ctrl+Z), `gResHtml`/`gMountRes` (results: Overlay / Mine / Answer views). His drawing is `st.answers[k] = {s:[{t:"pen"|"line"|"dot"|"odot", p:[[x,y],...]}]}` in graph coordinates, or null when empty. Graph questions are self-graded: `rightOf` returns null until he taps Good or Bad (`st.self[k]`), the same path as short answers. Hooks into existing code are small: the type check and graph branch in `validQuiz`, a branch in `rightOf` and `answerText`, `gPadHtml`/`gMountPad` in `renderQuestion`, `gResHtml` plus `gMountRes()` in `renderResults`, and the Grade yourself pills (labelled Good and Bad for graphs). Drawing repaints only the canvas and calls `refreshDots()`, so the card never rebuilds. Results grading now keeps the results list scroll position. The schema is documented in the block's header comment and in the bachs-quizzer skill.
+A question with `type: "graph"` shows a drawing pad instead of choices or a text box. Everything lives in one block of index.html, headed `/* graph questions: draw it, then compare with the real graph */`, just before `/* results → db */`: `gParse`/`gCompile` (safe formula parser, no eval), `gClean`/`gShapes`/`gDescribe` (schema cleaning, called from `validQuiz`), `gDraw` and friends (canvas painting), `gPadHtml`/`gMountPad` (question screen: Pencil, Line, Dot, Open dot, Eraser, Snap, Undo, Clear, Ctrl+Z), `gResHtml`/`gMountRes` (results: Overlay / Mine / Answer views). His drawing is `st.answers[k] = {s:[{t:"pen"|"line"|"dot"|"odot", p:[[x,y],...]}]}` in graph coordinates, or null when empty. Graph questions are self-graded: `rightOf` returns null until he taps Good or Bad (`st.self[k]`), the same path as short answers. Hooks into existing code are small: the type check and graph branch in `validQuiz`, a branch in `rightOf` and `answerText`, `gPadHtml`/`gMountPad` in `renderQuestion`, `gResHtml` plus `gMountRes()` in `renderResults`, and the Grade yourself pills (labelled Good and Bad for graphs). Drawing repaints only the canvas and calls `refreshDots()`, so the card never rebuilds. Results grading now keeps the results list scroll position. The schema is documented in the block's header comment and in SKILL.md.
 
 When publishing with `edit_version`, send every edit in one call and check the large module insert is in it: `renderResults` calls `gMountRes()` unconditionally, so a partial publish breaks the results screen for every quiz. Check the new `total_lines` against the expected count afterwards.
 
@@ -97,3 +92,7 @@ A question with `type: "frq"` is a free response. It uses the normal `#short` te
 
 ## Phones
 - At 640px and below `.res-mark` sits on its own row above the prompt, and the stats folder pills scroll sideways in one row (`.rng-f`).
+## Update check and popup (added 2026-11-26)
+- Block headed `/* ---------------- updates: version check + update dialog ----------------`, just before the toast section. `BQ_VERSION` is the page's release. Artifact pages can't fetch GitHub (the CSP blocks fetch to other hosts), but scripts from `cdn.jsdelivr.net/npm/` load, so each release publishes the npm package `bach-quizzer`, whose `latest.js` only sets `window.__bqLatest = {version, released, notes[]}`.
+- `checkUpdates()` runs once, 1.5s after load. `maybeShowUpdate()` (also called from `render()` when no quiz is open) shows `#upd` on the hub only, never during a quiz: notes (escaped), a link to `releases/latest/download/bachs-quizzer.zip`, the Settings → Capabilities → Skills step, and Copy message ("Update my Quizzer to vX..."), Later (this page load) and Skip this version (`zq:updSkip`). Escape and a click on the scrim close it.
+- QA: `test/update.py` (copy from `test/update.py.txt`, port 8768) fakes `latest.js` and checks the dialog on desktop and phone, that it stays hidden in a quiz, for equal and older versions and after Skip. Expect `errors: []` and every flag true. `test/qa.py` blocks jsDelivr so its walk is unaffected.

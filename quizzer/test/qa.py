@@ -25,6 +25,7 @@ def run(vp, label, mobile=False):
         ctx = b.new_context(viewport=vp, is_mobile=mobile, has_touch=mobile, reduced_motion=("reduce" if label.endswith("rm") else "no-preference"))
         ctx.route("https://fonts.googleapis.com/**", lambda r: r.abort())
         ctx.route("https://fonts.gstatic.com/**", lambda r: r.abort())
+        ctx.route("https://cdn.jsdelivr.net/**", lambda r: r.abort())   # update check: tested in test/update.py
         pg = ctx.new_page()
         pg.on("pageerror", lambda e: out["errors"].append("pageerror: " + str(e) + " @ " + (e.stack or "")[:400]))
         pg.on("console", lambda m: out["errors"].append("console: " + m.text) if m.type == "error" and "ERR_FAILED" not in m.text and "404" not in m.text else None)

@@ -1,15 +1,10 @@
----
-name: "bachs-quizzer-mini"
-description: "Use when Bach wants a quick pilot or mini quiz while he's learning a chunk (\"pilot me\", \"mini quiz\", \"check me on this\"). Writes 5 questions to Bach's Quizzer."
----
-
 # Bach's Quizzer mini quiz (pilot while learning)
 
-> Shared copy. This file is loaded from github.com/BachQLe/bach-quizzer by the bachs-quizzer loader. It was written for Bach: when someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy, at the slug the loader gave you. Bach's course list is only an example of naming; reuse the subjects the person already uses.
+> Part of the bachs-quizzer skill. It was written for Bach: when someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy, at the slug SKILL.md found. Bach's course list is only an example of naming; reuse the subjects the person already uses.
 
-Small check-ins while he studies. Same page and database as bachs-quizzer; the differences are size and scope.
+Small check-ins while he studies. Same page and database as SKILL.md's quizzes; the differences are size and scope.
 
-- Artifact slug: the one the loader found (the person's own Quizzer). Never rebuild, read, restyle or republish the page. Never use the built-in quiz widget. Never print questions or answers in chat.
+- Artifact slug: the one SKILL.md found (the person's own Quizzer). Never rebuild, read, restyle or republish the page. Never use the built-in quiz widget. Never print questions or answers in chat.
 - Two tool calls: `ToolSearch` with `select:mcp__claude-artifacts__db_write` (skip if already loaded), then one `db_write`. Nothing else, and no read-back.
 
 ## Scope
@@ -34,7 +29,7 @@ Reply in one line: "5 pilot questions on X are in your Quizzer under ECON 3010."
 
 ## FRQ pilots
 
-If he asks to pilot a free-response topic, write 1-2 `type: "frq"` questions instead of 5 multiple choice, following the bachs-quizzer skill's "Free response (FRQ) and rubrics" section: rubric bullets with points, no sample or model response, and one `db_get` on `rubrics/<subject-key>` first so the bullets match the class's grading.
+If he asks to pilot a free-response topic, write 1-2 `type: "frq"` questions instead of 5 multiple choice, following SKILL.md's "Free response (FRQ) and rubrics" section: rubric bullets with points, no sample or model response, and one `db_get` on `rubrics/<subject-key>` first so the bullets match the class's grading.
 
 ## The loop
 

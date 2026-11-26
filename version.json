@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0",
-  "loader": 1,
+  "version": "1.1.0",
   "released": "2026-11-26",
   "notes": [
-    "Bach's Quizzer is on GitHub. Everyone gets their own copy, and quiz instructions load from the repo so updates reach everyone."
+    "Bach's Quizzer now comes as one zip: the skill and the page together, so Claude never has to reach GitHub.",
+    "Your Quizzer shows a popup when a new version is out, with the download link and a message to send Claude."
   ]
 }

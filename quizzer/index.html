@@ -521,6 +521,22 @@
   .bgshuf.spin svg{animation:shufhop .32s steps(4) 1}
   @keyframes shufhop{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
   @media (max-width:480px){.bgshuf{width:var(--barh);padding:0;justify-content:center}.bgshuf span{display:none}}
+  /* update dialog (shown on the hub only, never during a quiz) */
+  .upd-scrim{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(6,10,10,.45)}
+  .upd-scrim.on{display:flex}
+  .card.upd{width:min(520px,100%);padding:32px 34px 26px;overflow:auto}
+  .upd h2{font-family:var(--serif);font-weight:500;font-size:clamp(26px,3.6vw,32px);line-height:1.12;margin:10px 0 12px}
+  .upd-notes{list-style:none;margin:0 0 16px;font-size:14px;line-height:1.5;color:var(--ink-soft);font-weight:400}
+  .upd-notes li{padding-left:16px;position:relative;margin:4px 0}
+  .upd-notes li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;background:var(--ink-soft)}
+  .upd-steps{margin:0 0 14px 20px;font-size:14px;line-height:1.55;font-weight:400}
+  .upd-steps li{margin:6px 0;padding-left:2px}
+  .upd-steps a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line-strong)}
+  .upd-steps a:hover{border-color:var(--ink)}
+  .upd-msg{font-family:var(--px);font-size:12px;letter-spacing:.04em;padding:10px 12px;border:1px dashed var(--line-strong);background:rgba(245,242,234,.05);margin-bottom:16px;user-select:all;-webkit-user-select:all}
+  .upd-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .upd-note{font-size:12px;color:var(--ink-soft);margin-top:10px;min-height:1em;font-weight:400}
+  @media (max-width:640px){.card.upd{padding:26px 20px 20px}.upd-row .btn{flex:1 1 auto}}
   /* toast */
   .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:10;opacity:0;pointer-events:none;
     background:var(--glass-strong);border:2px solid var(--line-strong);border-radius:0;padding:6px 6px 6px 16px;
@@ -1522,6 +1538,69 @@
     render();
   }
 
+  /* ---------------- updates: version check + update dialog ----------------
+     BQ_VERSION is this page's release; the release steps bump it (maintainer/RELEASE.md).
+     The page can't fetch GitHub: the artifact's content security policy blocks fetch to other hosts. Scripts from
+     cdn.jsdelivr.net/npm/ are allowed, so each release also publishes the npm package "bach-quizzer", whose latest.js
+     only sets window.__bqLatest = {version, released, notes[]}. Checked once per page load. The dialog shows on the hub
+     only, never while a quiz is open. Later hides it for this load; Skip this version stores zq:updSkip.
+     If the script can't load (no npm release yet, offline), nothing happens. */
+  const BQ_VERSION = "1.1.0";
+  const BQ_REPO = "https://github.com/BachQLe/bach-quizzer";
+  const BQ_ZIP = BQ_REPO + "/releases/latest/download/bachs-quizzer.zip";
+  const BQ_LATEST_JS = "https://cdn.jsdelivr.net/npm/bach-quizzer@latest/latest.js";
+  let updInfo = null, updShown = false;
+  const verParts = v => String(v).split(".").map(n => parseInt(n, 10) || 0);
+  const verNewer = (a, b) => { const x = verParts(a), y = verParts(b); for (let i = 0; i < 3; i++){ if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+  const updMsg = v => `Update my Quizzer to v${v}. I uploaded the new bachs-quizzer skill zip.`;
+  function checkUpdates(){
+    try {
+      const s = document.createElement("script");
+      s.src = BQ_LATEST_JS; s.async = true;
+      s.onload = () => {
+        const L = window.__bqLatest;
+        if (!L || typeof L.version !== "string" || !/^\d+\.\d+\.\d+$/.test(L.version) || !verNewer(L.version, BQ_VERSION)) return;
+        updInfo = {version: L.version, notes: Array.isArray(L.notes) ? L.notes.filter(n => typeof n === "string").slice(0, 6) : []};
+        maybeShowUpdate();
+      };
+      s.onerror = () => {};
+      document.head.appendChild(s);
+    } catch (e) {}
+  }
+  function maybeShowUpdate(){
+    if (!updInfo || updShown || quiz || booting) return;
+    if (store.get("zq:updSkip") === updInfo.version) return;
+    updShown = true;
+    const v = updInfo.version;
+    let el = $("#upd");
+    if (!el){ el = document.createElement("div"); el.id = "upd"; el.className = "upd-scrim"; document.body.appendChild(el); }
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "updT");
+    el.innerHTML = `<div class="card upd enter"><i class="c3"></i><i class="c4"></i>
+      <div class="eyebrow">Update · v${esc(BQ_VERSION)} → v${esc(v)}</div>
+      <h2 id="updT">A new Quizzer is out</h2>
+      ${updInfo.notes.length ? `<ul class="upd-notes">${updInfo.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+      <ol class="upd-steps">
+        <li><a href="${BQ_ZIP}" target="_blank" rel="noopener">Download the update</a> (bachs-quizzer.zip).</li>
+        <li>In Claude, open Settings → Capabilities → Skills and upload the zip. It replaces your old Bach's Quizzer skill.</li>
+        <li>Copy this message and send it to Claude in a new chat:</li>
+      </ol>
+      <div class="upd-msg" id="updMsg">${esc(updMsg(v))}</div>
+      <div class="upd-row"><button class="btn primary" id="updCopy" type="button">Copy message</button><button class="btn ghost" id="updLater" type="button">Later</button><button class="btn ghost" id="updSkip" type="button">Skip this version</button></div>
+      <p class="upd-note" id="updNote"></p></div>`;
+    el.classList.add("on");
+    const close = () => { el.classList.remove("on"); document.removeEventListener("keydown", onKey, true); };
+    const onKey = e => { if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); close(); } else if (!e.target.closest || !e.target.closest("#upd")) e.stopPropagation(); };
+    document.addEventListener("keydown", onKey, true);
+    $("#updLater").onclick = close;
+    $("#updSkip").onclick = () => { store.set("zq:updSkip", v); close(); };
+    $("#updCopy").onclick = async () => {
+      try { await navigator.clipboard.writeText(updMsg(v)); $("#updCopy").textContent = "Copied!"; $("#updNote").textContent = "Paste it into a chat with Claude after you upload the zip."; }
+      catch (e) { $("#updNote").textContent = "Couldn't copy here. Select the message above and copy it."; }
+    };
+    el.onclick = e => { if (e.target === el) close(); };
+    setTimeout(() => { const b = $("#updCopy"); if (b) b.focus(); }, 0);
+  }
+
   /* ---------------- toast ---------------- */
   function showToast(msg){ $("#toastMsg").textContent = msg; $("#toast").classList.add("on"); }
   function hideToast(){ $("#toast").classList.remove("on"); }
@@ -2290,6 +2369,7 @@
   function render(){
     const old = stage.querySelector(".card.q"), ob = old ? old.getBoundingClientRect() : null;
     renderInner(); applyLayout();
+    if (!quiz && updInfo) maybeShowUpdate();
     const nc = stage.querySelector(".card.q");
     // any change in the card's size (extended view in or out, graph questions) animates; same-size question swaps don't
     if (ob && nc) animCard(nc, {w: ob.width, h: ob.height});
@@ -3897,6 +3977,7 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden){ addTime(); save(); flushSync(); } else lastTick = Date.now(); });
   render();
   loadPhotos();
+  setTimeout(checkUpdates, 1500);   // after boot settles; one check per page load
 
   (async () => {
     try { db = window.claude && typeof window.claude.use === "function" ? await window.claude.use("db") : null; }

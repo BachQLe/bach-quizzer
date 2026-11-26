@@ -2,3 +2,5 @@ quizzer/test/*.png
 shots/
 __pycache__/
 .DS_Store
+dist/
+notes.md

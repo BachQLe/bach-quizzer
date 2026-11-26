@@ -1,0 +1,47 @@
+# On every push to stable: build the zip and, if version.json has a new version,
+# 1) create GitHub Release v<version> with bachs-quizzer.zip attached
+#    (the Quizzer popup links to releases/latest/download/bachs-quizzer.zip), and
+# 2) publish the npm package "bach-quizzer" (latest.js), which is how every Quizzer page learns a new version is out.
+#    Needs the repo secret NPM_TOKEN (an npm automation or granular token with publish rights). Without it, step 2 is skipped.
+name: release
+on:
+  push:
+    branches: [stable]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pillow
+      - name: Build
+        run: python3 tools/build.py
+      - name: Read version
+        id: v
+        run: echo "version=$(python3 -c 'import json;print(json.load(open("version.json"))["version"])')" >> "$GITHUB_OUTPUT"
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          python3 -c 'import json;v=json.load(open("version.json"));print("\n".join("- "+n for n in v.get("notes",[])))' > notes.md
+          if gh release view "v$V" >/dev/null 2>&1; then
+            gh release upload "v$V" dist/bachs-quizzer.zip --clobber
+          else
+            gh release create "v$V" dist/bachs-quizzer.zip --target "$GITHUB_SHA" --title "Bach's Quizzer $V" --notes-file notes.md --latest
+          fi
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", registry-url: "https://registry.npmjs.org" }
+      - name: npm (update popup)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then echo "::warning::NPM_TOKEN not set, so Quizzer pages won't see this release yet"; exit 0; fi
+          if [ "$(npm view bach-quizzer version 2>/dev/null)" = "$V" ]; then echo "npm already has $V"; exit 0; fi
+          cd dist/npm && npm publish --access public
+          curl -fsS "https://purge.jsdelivr.net/npm/bach-quizzer@latest/latest.js" || true

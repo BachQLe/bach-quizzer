@@ -1,15 +1,37 @@
 ---
-name: "bachs-quizzer"
-description: "Use when Bach says 'quiz me', runs /bachs-quizzer, wants practice questions, FRQs or free-response practice with rubrics, a quiz from his missed pile, a spaced quiz, grading of his written answers, or a review of his results and blind spots. Writes to Bach's Quizzer."
+name: bachs-quizzer
+description: "Bach's Quizzer: 'quiz me', mini or pilot quizzes, FRQs with rubrics, grading, missed pile, spaced quizzes, stats. Also sets up, updates or changes the person's own Quizzer page."
 ---
 
 # Bach's Quizzer
 
-> Shared copy. This file is loaded from github.com/BachQLe/bach-quizzer by the bachs-quizzer loader. It was written for Bach: when someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy, at the slug the loader gave you. Bach's course list is only an example of naming; reuse the subjects the person already uses.
+> Written for Bach. When someone else runs it, "Bach" and "he" mean the person you're working with, and the Quizzer is their own copy. Bach's course list is only an example of naming; reuse the subjects the person already uses.
 
-Bach's quiz page is already built and published. Your only job is to write questions into its database.
+Everything this skill needs is in its own folder (the base directory shown when it loaded), so nothing is downloaded from the web:
+- `page/`: the Quizzer page files (used only by setup and update)
+- `version.json`: this release's version and notes
+- `references/setup.md`, `references/update.md`, `references/edits.md`, `references/mini.md`
 
-- Artifact slug: the one the loader found (the person's own Quizzer). Without a loader, find it once with `list_artifacts` (query "Quizzer").
+## 1. Find the Quizzer
+
+The first time in a chat, one `list_artifacts` with query "Quizzer" (load it with ToolSearch if needed): use the person's own artifact whose title ends in "Quizzer" (pinned or most recent if several). Keep its slug for the rest of the chat. This lookup doesn't count toward any budget below. If you already know the slug from this chat, skip it.
+
+## 2. Pick the instructions
+
+Open a reference file only when the request needs it, and read it once:
+- They have no Quizzer yet, or ask to set one up or install it: `references/setup.md`.
+- "Update my Quizzer" (usually pasted from the page's update popup): `references/update.md`.
+- Change, restyle, fix or add a feature to the page itself: `references/edits.md`.
+- Quick pilot or mini quiz ("pilot me", "mini quiz", "check me on this"): `references/mini.md`.
+- Everything else (quizzes, FRQs, grading, reviews, missed pile, stats): the rest of this file. Don't open any reference.
+
+If the person attached `bachs-quizzer.zip` in the chat instead of installing it as a skill, unzip it into the working folder and use `bachs-quizzer/` from there as this skill's folder.
+
+## 3. Quizzes
+
+The page is already built and published. Your only job is to write questions into its database.
+
+- Artifact slug: the one found in step 1.
 - Link: only give it if he asks.
 
 Never rebuild, read, restyle or republish the page. Never use the built-in quiz widget. Never print questions or answers in chat.
@@ -19,7 +41,7 @@ Never rebuild, read, restyle or republish the page. Never use the built-in quiz 
 1. `ToolSearch` with `select:mcp__claude-artifacts__db_write` (skip if already loaded).
 2. One `db_write`.
 
-Nothing else. No `list_artifacts`, `get_artifact`, `list_types`, `guide`, `db_list`, memory reads, past-chat searches or task lists, and no read-back to verify the write. Two exceptions: a quiz built from his missed pile (see "Missed pile and blind spots"), which starts with a single `db_get`, and a quiz with FRQs (see "Free response (FRQ) and rubrics"), which starts with a single `db_get` on the class rubric and may add one more op to the same `db_write`. Grading his written answers is one `db_get` plus one `db_write` (see "Review results"). Only if the write fails because the slug is wrong, find it once with `list_artifacts` (query "Quizzer"); if the page is gone, say so in one line and stop.
+Nothing else. No other `list_artifacts`, `get_artifact`, `list_types`, `guide`, `db_list`, memory reads, past-chat searches or task lists, and no read-back to verify the write. Two exceptions: a quiz built from his missed pile (see "Missed pile and blind spots"), which starts with a single `db_get`, and a quiz with FRQs (see "Free response (FRQ) and rubrics"), which starts with a single `db_get` on the class rubric and may add one more op to the same `db_write`. Grading his written answers is one `db_get` plus one `db_write` (see "Review results"). Only if the write fails because the slug is wrong, look it up again once with `list_artifacts` (query "Quizzer"); if the page is gone, offer to set up a new one (`references/setup.md`).
 
 Write the questions once, directly inside the `db_write` call. Do not draft them in your thinking or in chat first. Check each answer key as you write it.
 
