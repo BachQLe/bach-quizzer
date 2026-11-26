@@ -1,0 +1,23 @@
+{
+ "photos": [
+  {"file": "great-wave.webp", "pos": "35% center"},
+  {"file": "sea-arch.webp", "pos": "center"},
+  {"file": "valley-pagoda.webp", "pos": "center"},
+  {"file": "alpine-village.webp", "pos": "center"},
+  {"file": "kyoto-dusk.webp", "pos": "center"},
+  {"file": "bridge-dawn.webp", "pos": "center"},
+  {"file": "manarola-dusk.webp", "pos": "center"},
+  {"file": "fuji-green-pagoda.webp", "pos": "center"},
+  {"file": "fuji-sakura-pagoda.webp", "pos": "center"},
+  {"file": "shibuya-night.webp", "pos": "center"},
+  {"file": "tokumeien-garden.webp", "pos": "center", "credit": "Tokumeien Zen Garden, Takasaki, Japan · @dreiimos", "creditLink": "https://www.instagram.com/dreiimos/"},
+  {"file": "fuji-dusk-pagoda.webp", "pos": "center"},
+  {"file": "atitlan-lavender.webp", "pos": "center"},
+  {"file": "dock-dusk.webp", "pos": "center"},
+  {"file": "torii-sunset.webp", "pos": "center"},
+  {"file": "sakura-canal.webp", "pos": "center"},
+  {"file": "kyoto-night.webp", "pos": "center"},
+  {"file": "sakura-moat-boats.webp", "pos": "center"},
+  {"file": "sakura-lanterns.webp", "pos": "center"}
+ ]
+}
