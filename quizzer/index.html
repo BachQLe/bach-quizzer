@@ -1478,6 +1478,73 @@
     if (ok && ls.revealedAt) { const t = tallyOf(q, ls); return {kind:"done", score:t.right, total:t.total, tries:1}; }
     return {kind:"new"};
   }
+  /* ---------------- first run: the welcome demo quiz ----------------
+     A brand-new Quizzer (the server confirms zero quizzes, and it was never seeded) writes WELCOME_QUIZ to quizzes/welcome-tour.
+     The library snapshot then announces it, so it opens on its own. meta/welcome {seededAt} (plus zq:welcomed locally) records
+     the seeding, so deleting the demo never brings it back on any device. It is an ordinary quiz doc: same schema as zen-quiz writes. */
+  const WELCOME_ID = "welcome-tour";
+  const WELCOME_QUIZ = {
+    title: "Welcome tour: every question type",
+    subject: "Getting Started",
+    questions: [
+      { prompt: "Welcome to your Quizzer! This demo shows every question type in a few minutes. Pick an answer by clicking it or pressing its letter. Which key flags a question so you remember to double-check it?",
+        choices: ["F", "T", "Esc", "Enter"], answer: "A",
+        explanation: "F (or the Flag button) bookmarks a question; flagged ones show on the progress dots and in your review. T shows or hides the timer, Esc goes back to the library." },
+      { prompt: "Right-click a choice (or press Shift + its letter) to cross it out. Try crossing out the three wrong planets: which is the largest planet in the solar system?",
+        choices: ["Mars", "Venus", "Jupiter", "Mercury"], answer: "C",
+        explanation: "Jupiter is about 11 times Earth's width. Crossing out choices you've ruled out is a fast way to narrow down a hard question." },
+      { prompt: "Math renders properly, inline and in choices. What is $\\frac{d}{dx}\\left(x^3\\right)$?",
+        choices: ["$3x^2$", "$x^2$", "$3x^3$", "$\\frac{x^4}{4}$"], answer: "A",
+        explanation: "Power rule: bring the 3 down and subtract one from the exponent. $\\frac{x^4}{4}$ is the antiderivative, a common mix-up." },
+      { prompt: "Some questions come with a table. Using this demand schedule, by how many units does quantity demanded fall when the price rises from 2 to 4? (The calculator icon in the top bar is there if you want it.)",
+        table: { headers: ["Price (dollars)", "Quantity demanded"], rows: [["1", "120"], ["2", "100"], ["3", "80"], ["4", "60"]] },
+        choices: ["20", "40", "60", "100"], answer: "B",
+        explanation: "At a price of 2 people buy 100; at 4 they buy 60. 100 − 60 = 40. Picking 60 means reading the new quantity instead of the change." },
+      { prompt: "Short answers: type your answer instead of choosing. Close matches grade themselves. What is the chemical symbol for gold?",
+        answer: "Au", accept: ["au", "AU"],
+        explanation: "Au, from the Latin aurum. If a short answer is right but worded differently, you can mark it yourself on the results screen." },
+      { prompt: "Turn on Conf in the top bar to rate how sure you are on each question. In your stats, what counts as a blind spot?",
+        choices: ["A question you skipped", "A miss you rated Sure", "A miss you rated Guess", "A question you flagged"], answer: "B",
+        explanation: "Being sure and wrong means a wrong idea, not a slip, so those show up first in Stats and when Claude reviews your misses. A guessed miss is expected." },
+      { type: "graph", prompt: "Graph questions give you graph paper. Use the Line tool to draw $y = x + 1$, put a Dot on its y-intercept, then use the Text tool to label that point A.",
+        graph: { xMin: -4, xMax: 4, yMin: -3, yMax: 5, xStep: 1, yStep: 1, xLabel: "x", yLabel: "y",
+          answer: { curves: [{ fn: "x+1", arrows: "both" }], dots: [{ x: 0, y: 1, label: "A" }] } },
+        answer: "The line y = x + 1, rising one unit per step right, with A at the y-intercept (0, 1).",
+        explanation: "After you reveal, flip between Overlay, Mine and Answer to compare your sketch with the real graph, then mark it Good or Bad yourself." },
+      { type: "frq", prompt: "Free response: write a few sentences and grade it against a rubric afterwards. In 2 to 4 sentences, explain why quizzing yourself helps you remember more than rereading your notes.",
+        points: 4,
+        rubric: ["Says that recalling an answer strengthens memory (2)", "Contrasts it with rereading, which feels familiar without testing recall (1)", "Mentions that quizzing shows you what you don't know yet (1)"],
+        explanation: "After you reveal, tick the bullets your response hit (70% of the points counts as right), or tell Claude “grade my quiz” and it ticks them for you with a note." },
+      { prompt: "Last one. This quiz is only a tour. What can you do with it once you've seen your results?",
+        choices: ["Nothing, it stays in your library for good", "Delete it: the button on the results screen, or the ✕ on its card in the library", "Wait, it deletes itself in a week", "Only Claude can remove it"], answer: "B",
+        explanation: "Delete it whenever you like. Then ask Claude to “quiz me on” any topic, or say “mini quiz”, and new quizzes land here. You can even ask Claude to change how this page looks." }
+    ]
+  };
+  const WELCOME_LEDE = "A quick tour of every question type: multiple choice, math, tables, short answer, graphing and free response. Nothing is graded until you review and reveal the answers. When you're done, you can delete this quiz.";
+  let welcomeTried = false;
+  async function maybeWelcome(){
+    if (welcomeTried || !db || !libConfirmed || library.length) return;
+    welcomeTried = true;
+    if (store.get("zq:welcomed")) return;
+    try {
+      const snap = await db.doc("meta/welcome").get();
+      const ex = typeof snap.exists === "function" ? snap.exists() : snap.exists;
+      if (ex){ store.set("zq:welcomed", true); return; }
+      if (library.length) return;                      // a quiz arrived while we checked
+      const at = new Date().toISOString();
+      await db.doc("quizzes/" + WELCOME_ID).set({ ...WELCOME_QUIZ, createdAt: at });
+      await db.doc("meta/welcome").set({ seededAt: at, quizId: WELCOME_ID });
+      store.set("zq:welcomed", true);
+    } catch {}
+  }
+  function deleteDemo(){
+    if (!quiz || quiz.id !== WELCOME_ID) return;
+    const docId = quiz.docId, rk = safeId(quiz.id);
+    toHub();                                           // flushes any pending results write first
+    if (docId) deleteQuiz(docId);
+    if (db) writing = writing.then(() => db.doc("results/" + rk).delete()).catch(() => {});   // after that write lands
+  }
+
   function maybeStart(force){
     if (startedUp) return;
     if (!force && !(libConfirmed && resConfirmed)) return;
@@ -1516,6 +1583,7 @@
       }
     }
     if (!snap.metadata.fromCache) libConfirmed = true;
+    if (libConfirmed && !items.length) maybeWelcome();   // brand-new Quizzer: seed the welcome demo (it then arrives through this snapshot)
     if (!startedUp) { maybeStart(); return; }
     for (const q of library) if (!seen.has(q.id)){ markSeen(q.id); if (!isLocked(q)) announce(q); }
     if (!quiz) render();
@@ -1545,7 +1613,7 @@
      only sets window.__bqLatest = {version, released, notes[]}. Checked once per page load. The dialog shows on the hub
      only, never while a quiz is open. Later hides it for this load; Skip this version stores zq:updSkip.
      If the script can't load (no npm release yet, offline), nothing happens. */
-  const BQ_VERSION = "1.1.0";
+  const BQ_VERSION = "1.2.0";
   const BQ_REPO = "https://github.com/BachQLe/bach-quizzer";
   const BQ_ZIP = BQ_REPO + "/releases/latest/download/bachs-quizzer.zip";
   const BQ_LATEST_JS = "https://cdn.jsdelivr.net/npm/bach-quizzer@latest/latest.js";
@@ -3550,7 +3618,7 @@
       <section class="card">
         <div class="eyebrow" style="--sc:${subjColor(subjKey(quiz.subject))}"><span class="sj">${esc(quiz.subject)}</span> · ${n} questions</div>
         <h1>${esc(quiz.title)}</h1>
-        <p class="lede">Answer at your own pace. Nothing is graded until you've reviewed everything and chosen to reveal the answers.</p>
+        <p class="lede">${quiz.id === WELCOME_ID ? WELCOME_LEDE : "Answer at your own pace. Nothing is graded until you've reviewed everything and chosen to reveal the answers."}</p>
         <div class="row" style="margin-top:28px">
           <button class="btn primary" id="begin">${answered ? "Continue" : "Begin"}</button>
           ${answered ? `<button class="btn ghost" id="restart">Start over</button>` : ""}
@@ -3775,6 +3843,7 @@
           <p class="lede" style="text-align:right"><span class="px" style="color:var(--ink);font-size:13px">${HOURGLASS}Time ${fmtT(totalMs(st))}</span><br>${t.pend ? `${t.pend} written answer${t.pend > 1 ? "s" : ""} to check yourself.<br>` : ""}${nDrop ? `${nDrop} question${nDrop > 1 ? "s" : ""} dropped.<br>` : ""}${blind ? `${blind} sure but wrong.<br>` : ""}${scoreLine(t)}</p>
         </div>
         ${shortIdx.length ? `<div class="gradebar"><span class="gb-t">${t.pend ? "Written answers to grade. Tell Claude “grade my quiz” and the marks fill in here, or copy a prompt." : "Graded. Tell Claude “grade my quiz” again any time, or copy a prompt."}</span><button class="btn" id="copyGrade">Copy prompt</button></div>` : ""}
+        ${quiz.id === WELCOME_ID && quiz.docId ? `<div class="gradebar demo-done"><span class="gb-t">That was the demo. Delete it whenever you like, then ask Claude to “quiz me on” any topic for a real one.</span><button class="btn" id="delDemo">Delete demo</button></div>` : ""}
         ${hasFrq ? `<div id="crub"></div>` : ""}
         <div class="res-list">${resOrder.map(k => {
           const q = quiz.questions[k];
@@ -3843,6 +3912,8 @@
       try { await navigator.clipboard.writeText(resultsText()); $("#copyNote").textContent = "Copied. Paste it into your chat with Claude."; }
       catch { $("#copyNote").textContent = "Couldn't copy here. Just tell Claude “check my quiz results.”"; }
     };
+    const dd = $("#delDemo");   // welcome demo: two clicks to delete (it can't be brought back)
+    if (dd) dd.onclick = () => { if (!dd.dataset.sure){ dd.dataset.sure = "1"; dd.textContent = "Yes, delete it"; return; } deleteDemo(); };
     const cg = $("#copyGrade");
     if (cg) cg.onclick = async () => {
       try { await navigator.clipboard.writeText(gradePromptText()); cg.textContent = "Copied!"; $("#copyNote").textContent = "Copied. Paste it into your chat with Claude."; }

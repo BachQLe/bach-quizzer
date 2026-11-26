@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "released": "2026-11-26",
   "notes": [
-    "Bach's Quizzer now comes as one zip: the skill and the page together, so Claude never has to reach GitHub.",
-    "Your Quizzer shows a popup when a new version is out, with the download link and a message to send Claude."
+    "New Quizzers open with a short welcome quiz that tours every question type: multiple choice, math, tables, short answer, graphing and free response.",
+    "Delete the demo from its results screen when you're done. It won't come back."
   ]
 }
